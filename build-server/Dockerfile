@@ -1,22 +1,22 @@
-FROM ubuntu:focal
+FROM node:20-alpine
 
-RUN apt-get update
-RUN apt-get install -y curl
-RUN curl -sL https://deb.nodesource.com/setup_20.x | bash -
-RUN apt-get upgrade -y
-RUN apt-get install -y nodejs
+# Install git for cloning repositories
+RUN apk add --no-cache git
 
-RUN apt-get install git -y
+# Create non-root user
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 WORKDIR /home/app
 
-COPY main.sh main.sh
-COPY script.js script.js
-COPY package*.json .
+# Copy dependency files first for better layer caching
+COPY package.json package-lock.json ./
+RUN npm ci --only=production
 
-RUN npm install
-
+# Copy application files
+COPY main.sh script.js ./
 RUN chmod +x main.sh
-RUN chmod +x script.js
 
-ENTRYPOINT [ "/home/app/main.sh" ]
+# Switch to non-root user
+USER appuser
+
+ENTRYPOINT ["/home/app/main.sh"]

@@ -3,14 +3,19 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js",
+    "dev": "nodemon index.js"
   },
-  "keywords": [],
+  "keywords": ["s3", "reverse-proxy", "static-hosting"],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "description": "Reverse proxy that serves deployed sites from S3 via subdomain routing",
   "dependencies": {
-    "express": "^4.18.2",
-    "http-proxy": "^1.18.1"
+    "dotenv": "16.4.1",
+    "express": "4.18.2",
+    "http-proxy": "1.18.1"
+  },
+  "devDependencies": {
+    "nodemon": "3.0.3"
   }
 }

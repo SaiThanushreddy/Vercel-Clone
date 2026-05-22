@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  api-server:
+    build: ./api-server
+    ports:
+      - "${API_PORT:-9000}:9000"
+    environment:
+      - AWS_REGION=${AWS_REGION}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - ECS_CLUSTER=${ECS_CLUSTER}
+      - ECS_TASK_DEFINITION=${ECS_TASK_DEFINITION}
+      - ECS_SUBNETS=${ECS_SUBNETS}
+      - ECS_SECURITY_GROUPS=${ECS_SECURITY_GROUPS}
+      - ECS_CONTAINER_NAME=${ECS_CONTAINER_NAME:-builder-image}
+      - REDIS_URL=redis://redis:6379
+      - API_PORT=9000
+      - SOCKET_PORT=9002
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:3000}
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  s3-reverse-proxy:
+    build: ./s3-reverse-proxy
+    ports:
+      - "${PROXY_PORT:-8000}:8000"
+    environment:
+      - S3_BASE_PATH=${S3_BASE_PATH}
+      - PROXY_PORT=8000
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+volumes:
+  redis-data:

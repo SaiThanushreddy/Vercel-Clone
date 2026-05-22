@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deploy — One-Click Deployment</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+          <polyline points="2 17 12 22 22 17"></polyline>
+          <polyline points="2 12 12 17 22 12"></polyline>
+        </svg>
+        <span>Deploy</span>
+      </div>
+    </header>
+
+    <main>
+      <h1>Deploy your project<br><span class="gradient-text">in seconds</span></h1>
+      <p class="subtitle">Paste a GitHub repository URL and we'll build and deploy it instantly.</p>
+
+      <form id="deploy-form">
+        <div class="input-group">
+          <input
+            type="url"
+            id="git-url"
+            placeholder="https://github.com/username/repository"
+            required
+            autocomplete="off"
+            spellcheck="false"
+          >
+          <button type="submit" id="deploy-btn">
+            <span class="btn-text">Deploy</span>
+            <span class="btn-loader hidden">
+              <svg class="spinner" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none" stroke-dasharray="31.4 31.4" stroke-linecap="round"/>
+              </svg>
+            </span>
+          </button>
+        </div>
+        <p class="hint">Supports any public GitHub repo with a build script</p>
+      </form>
+
+      <div id="result" class="result hidden">
+        <div class="result-card">
+          <div class="result-header">
+            <span class="status-dot"></span>
+            <span class="status-text">Queued</span>
+          </div>
+          <div class="result-body">
+            <div class="result-row">
+              <span class="label">Project</span>
+              <span id="project-slug" class="value mono"></span>
+            </div>
+            <div class="result-row">
+              <span class="label">URL</span>
+              <a id="project-url" class="value mono link" href="#" target="_blank"></a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="logs-section" class="logs-section hidden">
+        <div class="logs-header">
+          <span>Build Logs</span>
+          <span class="live-badge">LIVE</span>
+        </div>
+        <div id="logs" class="logs-container">
+          <p class="log-line waiting">Waiting for build to start...</p>
+        </div>
+      </div>
+    </main>
+
+    <footer>
+      <p>Built with Node.js, AWS ECS, S3 & Redis</p>
+    </footer>
+  </div>
+
+  <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

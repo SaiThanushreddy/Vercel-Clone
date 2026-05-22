@@ -1,0 +1,7 @@
+node_modules/
+aws/
+awscliv2.zip
+.git
+.env
+*.log
+output/

@@ -1,28 +1,71 @@
-const express = require('express')
-const httpProxy = require('http-proxy')
+require('dotenv').config();
 
-const app = express()
-const PORT = 8000
+const express = require('express');
+const httpProxy = require('http-proxy');
 
-const BASE_PATH = 'https://vercel-thanush.s3.ap-south-1.amazonaws.com/__outputs/'
+// --- Config ---
+const PORT = parseInt(process.env.PROXY_PORT) || 8000;
+const BASE_PATH = process.env.S3_BASE_PATH;
 
-const proxy = httpProxy.createProxy()
+if (!BASE_PATH) {
+  console.error('[Proxy] Missing required environment variable: S3_BASE_PATH');
+  process.exit(1);
+}
 
+const app = express();
+const proxy = httpProxy.createProxyServer();
+
+// --- Health check ---
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// --- Proxy middleware ---
 app.use((req, res) => {
-    const hostname = req.hostname;
-    const subdomain = hostname.split('.')[0];
+  const hostname = req.hostname;
+  const subdomain = hostname.split('.')[0];
 
-    const resolvesTo = `${BASE_PATH}/${subdomain}`
+  if (!subdomain || subdomain === hostname) {
+    return res.status(400).json({ error: 'Invalid subdomain' });
+  }
 
-    return proxy.web(req, res, { target: resolvesTo, changeOrigin: true })
+  const target = `${BASE_PATH}/${subdomain}`;
 
-})
+  proxy.web(req, res, { target, changeOrigin: true });
+});
 
+// --- Rewrite requests to append index.html for root paths ---
 proxy.on('proxyReq', (proxyReq, req, res) => {
-    const url = req.url;
-    if (url === '/')
-        proxyReq.path += 'index.html'
+  const url = req.url;
+  if (url === '/') {
+    proxyReq.path += 'index.html';
+  }
+});
 
-})
+// --- Handle proxy errors ---
+proxy.on('error', (err, req, res) => {
+  console.error(`[Proxy] Error for ${req.hostname}${req.url}:`, err.message);
 
-app.listen(PORT, () => console.log(`Reverse Proxy Running..${PORT}`))
+  if (!res.headersSent) {
+    res.status(502).json({
+      error: 'Deployment not found or unavailable',
+      subdomain: req.hostname.split('.')[0],
+    });
+  }
+});
+
+// --- Graceful shutdown ---
+function gracefulShutdown(signal) {
+  console.log(`\n[Proxy] ${signal} received. Shutting down...`);
+  proxy.close();
+  process.exit(0);
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// --- Start ---
+app.listen(PORT, () => {
+  console.log(`[Proxy] Reverse proxy running on port ${PORT}`);
+  console.log(`[Proxy] Serving from: ${BASE_PATH}`);
+});
